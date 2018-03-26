@@ -1,0 +1,9 @@
+.DS_Store
+
+.settings/language.settings.xml
+
+*.properties
+
+out/
+src/sandbox/
+!src/sandbox/README.md
