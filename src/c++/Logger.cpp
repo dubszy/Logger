@@ -1,8 +1,6 @@
 #include "Logger.hpp"
 
-#include <cxxabi.h>
 #include <errno.h>
-#include <memory>
 #include <stdio.h>
 #include <string.h>
 
@@ -15,23 +13,23 @@ const char *global_log_file_path_ = "output.log";
  * Builders
  */
 
-template <class C>
-Logger *Logger::forClass(LogLevel level) {
-    char *demangled = abi::__cxa_demangle(typeid(C).name(), 0, 0, NULL);
-    Logger *l = new Logger(demangled, level);
-    printf("Logger::forClass : classname: %s\n", demangled);
-    l->setPrintItemName(true);
-    free(demangled);
+Logger *Logger::forItem(string item_name, LogLevel level) {
+    Logger *l = new Logger(true, item_name, level);
     return l;
 }
 
-Logger *Logger::forItem(const char *item_name, LogLevel level) {
-    Logger *l = new Logger(item_name, level);
-    l->setPrintItemName(true);
-    return l;
+LogLevel Logger::getLogLevelFromString(string level_str) {
+    if (level_str.compare("fatal")) {
+        return LogLevelFatal;
+    } else if (level_str.compare("error")) {
+        return LogLevelError;
+    } else if (level_str.compare("warn") || level_str.compare("warning")) {
+        return LogLevelWarning;
+    } else if (level_str.compare("debug")) {
+        return LogLevelDebug;
+    }
+    return LogLevelInfo;
 }
-
-
 
 /*
  * Global Settings
@@ -82,11 +80,11 @@ void Logger::setPrintItemName(bool print_item_name) {
     print_item_name_ = print_item_name;
 }
 
-const char *Logger::getItemName() {
+string Logger::getItemName() {
     return item_name_;
 }
 
-void Logger::setItemName(const char *item_name) {
+void Logger::setItemName(string item_name) {
     item_name_ = item_name;
 }
 
@@ -111,43 +109,55 @@ void Logger::setLogLogger(bool log_logger) {
 /*
  * Log Methods
  */
-int Logger::fatal(const char **prefixes, int prefixes_len, const char *message, ...) {
+int Logger::fatal(string *prefixes, int prefixes_len, string message, ...) {
     va_list args;
     va_start(args, message);
-    return log_(true, LogLevelFatal, prefixes, prefixes_len, message, args);
+    int log_res = log_(true, LogLevelFatal, prefixes, prefixes_len, message, args);
+    va_end(args);
+    return log_res;
 }
 
-int Logger::fatal(const char *message, ...) {
+int Logger::fatal(string message, ...) {
     va_list args;
     va_start(args, message);
-    return fatal(NULL, 0, message, args);
+    int log_res = log_(true, LogLevelFatal, NULL, 0, message, args);
+    va_end(args);
+    return log_res;
 }
 
-int Logger::error(const char **prefixes, int prefixes_len, const char *message, ...) {
+int Logger::error(string *prefixes, int prefixes_len, string message, ...) {
     va_list args;
     va_start(args, message);
-    return log_(true, LogLevelError, prefixes, prefixes_len, message, args);
+    int log_res = log_(true, LogLevelError, prefixes, prefixes_len, message, args);
+    va_end(args);
+    return log_res;
 }
 
-int Logger::error(const char *message, ...) {
+int Logger::error(string message, ...) {
     va_list args;
     va_start(args, message);
-    return error(NULL, 0, message, args);
+    int log_res = log_(true, LogLevelError, NULL, 0, message, args);
+    va_end(args);
+    return log_res;
 }
 
-int Logger::warn(const char **prefixes, int prefixes_len, const char *message, ...) {
+int Logger::warn(string *prefixes, int prefixes_len, string message, ...) {
     va_list args;
     va_start(args, message);
-    return log_(true, LogLevelWarning, prefixes, prefixes_len, message, args);
+    int log_res = log_(true, LogLevelWarning, prefixes, prefixes_len, message, args);
+    va_end(args);
+    return log_res;
 }
 
-int Logger::warn(const char *message, ...) {
+int Logger::warn(string message, ...) {
     va_list args;
     va_start(args, message);
-    return warn(NULL, 0, message, args);
+    int log_res = log_(true, LogLevelWarning, NULL, 0, message, args);
+    va_end(args);
+    return log_res;
 }
 
-int Logger::info(const char **prefixes, int prefixes_len, const char *message, ...) {
+int Logger::info(string *prefixes, int prefixes_len, string message, ...) {
     va_list args;
     va_start(args, message);
     int log_res = log_(true, LogLevelInfo, prefixes, prefixes_len, message, args);
@@ -155,7 +165,7 @@ int Logger::info(const char **prefixes, int prefixes_len, const char *message, .
     return log_res;
 }
 
-int Logger::info(const char *message, ...) {
+int Logger::info(string message, ...) {
     va_list args;
     va_start(args, message);
     int log_res = log_(true, LogLevelInfo, NULL, 0, message, args);
@@ -163,16 +173,20 @@ int Logger::info(const char *message, ...) {
     return log_res;
 }
 
-int Logger::debug(const char **prefixes, int prefixes_len, const char *message, ...) {
+int Logger::debug(string *prefixes, int prefixes_len, string message, ...) {
     va_list args;
     va_start(args, message);
-    return log_(true, LogLevelInfo, prefixes, prefixes_len, message, args);
+    int log_res = log_(true, LogLevelDebug, prefixes, prefixes_len, message, args);
+    va_end(args);
+    return log_res;
 }
 
-int Logger::debug(const char *message, ...) {
+int Logger::debug(string message, ...) {
     va_list args;
     va_start(args, message);
-    return debug(NULL, 0, message, args);
+    int log_res = log_(true, LogLevelDebug, NULL, 0, message, args);
+    va_end(args);
+    return log_res;
 }
 
 const char *Logger::level_msg(LogLevel l) {
@@ -195,7 +209,7 @@ const char *Logger::level_msg(LogLevel l) {
  * Heavy Lifting
  */
 
-int Logger::log_(bool write_to_log, LogLevel level, const char **prefixes, int prefixes_len, const char *message, ...) {
+int Logger::log_(bool write_to_log, LogLevel level, string *prefixes, int prefixes_len, string message, ...) {
     int log_res;
     va_list args;
     va_start(args, message);
@@ -204,57 +218,57 @@ int Logger::log_(bool write_to_log, LogLevel level, const char **prefixes, int p
     return log_res;
 }
 
-int Logger::log_(bool write_to_log, LogLevel level, const char **prefixes, int prefixes_len, const char *message, va_list args) {
+int Logger::log_(bool write_to_log, LogLevel level, string *prefixes, int prefixes_len, string message, va_list args) {
     if ((level < global_log_level_ || level < level_)) {
         return -1;
     }
 
     int log_res;
     FILE *logfile;
-    char msg[512];
+    string full_prefixes;
+    full_prefixes.append("[ ").append(level_msg(level)).append(" ] ");
 
-    strcpy(msg, "[ ");
-    strcat(msg, level_msg(level));
-    strcat(msg, " ] ");
+    if (print_item_name_) {
+        full_prefixes.append("[ ").append(item_name_).append(" ] ");
+    }
+
     if (isLoggingLogger()) {
-        printf("[selflog] [ %s ] Message: %s\n", ((item_name_) ? item_name_ : "-"), msg);
+        cout << "[selflog] [ " << ((!item_name_.empty()) ? item_name_ : "-") << " ] Prefixes: " << full_prefixes << endl;
     }
     for (int i = 0; i < prefixes_len; i++) {
         if (isLoggingLogger()) {
-            printf("[selflog] [ %s ] Found prefix: %s\n", ((item_name_) ? item_name_ : "-"), prefixes[i]);
+            cout << "[selflog] [ " << ((!item_name_.empty()) ? item_name_ : "-") << " ] Found prefix: " << prefixes[i] << endl;
         }
-        strcat(msg, "[ ");
-        strcat(msg, prefixes[i]);
-        strcat(msg, " ] ");
+        full_prefixes.append("[ ").append(prefixes[i]).append(" ] ");
         if (isLoggingLogger()) {
-            printf("[selflog] [ %s ] Message: %s\n", ((item_name_) ? item_name_ : "-"), msg);
+            cout << "[selflog] [ " << ((!item_name_.empty()) ? item_name_ : "-") << " ] Prefixes: " << full_prefixes << endl;
         }
     }
 
-    char fmt[512];
+    char fmt[4096];
 
     if (args) {
-        vsprintf(fmt, message, args);
+        vsprintf(fmt, message.c_str(), args);
     } else {
-        strcpy(fmt, message);
+        strcpy(fmt, message.c_str());
     }
 
-    strcat(msg, fmt);
+    ((level == LogLevelError || level == LogLevelFatal) ? cerr : cout) << full_prefixes << fmt << endl;
 
-    log_res = fprintf((level == LogLevelError || level == LogLevelFatal) ? stderr : stdout, "%s", msg);
+    //log_res = fprintf(((level == LogLevelError || level == LogLevelFatal) ? stderr : stdout), "%s", msg);
 
-    if (write_to_log) {
-        if ((logfile = fopen(log_file_path_, "a")) == NULL) {
-            printf("[ fatal ] [selflog] [ %s ] Failed to open '%s' (error: %s)\n",
-                    ((item_name_) ? item_name_ : "-"), log_file_path_, strerror(errno));
-            return -2;
-        }
-        if ((log_res = fprintf(logfile, message, args)) < 1) {
-            printf("[ fatal ] [selflog] [ %s ] Failed to write to '%s' (error: %s)\n",
-                    ((item_name_) ? item_name_ : "-"), log_file_path_, strerror(errno));
-        }
-        fclose(logfile);
-    }
+//    if (write_to_log) {
+//        if ((logfile = fopen(log_file_path_, "a")) == NULL) {
+//            printf("[ fatal ] [selflog] [ %s ] Failed to open '%s' (error: %s)\n",
+//                    ((item_name_) ? item_name_ : "-"), log_file_path_, strerror(errno));
+//            return -2;
+//        }
+//        if ((log_res = fprintf(logfile, message, args)) < 1) {
+//            printf("[ fatal ] [selflog] [ %s ] Failed to write to '%s' (error: %s)\n",
+//                    ((item_name_) ? item_name_ : "-"), log_file_path_, strerror(errno));
+//        }
+//        fclose(logfile);
+//    }
 
     return log_res;
 }
