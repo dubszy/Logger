@@ -3,9 +3,9 @@
 
 #include <cstddef>
 #include <cstdarg>
+#include <cstdint>
 #include <cxxabi.h>
 #include <iostream>
-#include <stdint.h>
 #include <string>
 
 using namespace std;

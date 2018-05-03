@@ -1,8 +1,11 @@
 .DS_Store
 
+.idea/
 .settings/language.settings.xml
 
 *.properties
+
+cmake-build-debug/
 
 out/
 src/sandbox/

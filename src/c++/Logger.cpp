@@ -1,8 +1,8 @@
 #include "Logger.hpp"
 
-#include <errno.h>
-#include <stdio.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 
 bool global_log_logger_           = false;
 LogLevel global_log_level_        = LogLevelInfo;
