@@ -3,7 +3,7 @@ project(Logger)
 
 set(CMAKE_CXX_STANDARD 11)
 
-include_directories(src/c++)
+include_directories(include)
 
 add_library(logger
         src/c++/Logger.cpp)
