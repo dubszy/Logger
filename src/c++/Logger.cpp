@@ -258,11 +258,7 @@ int Logger::log_(bool write_to_log, LogLevel level, string *prefixes, int prefix
 
     char fmt[8192];
 
-    if (args) {
-        vsprintf(fmt, message.c_str(), args);
-    } else {
-        strcpy(fmt, message.c_str());
-    }
+    vsprintf(fmt, message.c_str(), args);
 
     ((level == LogLevelError || level == LogLevelFatal) ? cerr : cout) << full_prefixes << fmt << endl;
     logFile << full_prefixes << fmt << endl;
