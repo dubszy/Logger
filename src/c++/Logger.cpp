@@ -3,6 +3,8 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <iostream>
 
 bool global_log_logger_           = false;
 LogLevel global_log_level_        = LogLevelInfo;
@@ -19,13 +21,13 @@ Logger *Logger::forItem(string item_name, LogLevel level) {
 }
 
 LogLevel Logger::getLogLevelFromString(string level_str) {
-    if (level_str.compare("fatal")) {
+    if (level_str == "fatal") {
         return LogLevelFatal;
-    } else if (level_str.compare("error")) {
+    } else if (level_str == "error") {
         return LogLevelError;
-    } else if (level_str.compare("warn") || level_str.compare("warning")) {
+    } else if (level_str == "warn" || level_str == "warning") {
         return LogLevelWarning;
-    } else if (level_str.compare("debug")) {
+    } else if (level_str == "debug") {
         return LogLevelDebug;
     }
     return LogLevelInfo;
@@ -85,7 +87,7 @@ string Logger::getItemName() {
 }
 
 void Logger::setItemName(string item_name) {
-    item_name_ = item_name;
+    item_name_ = std::move(item_name);
 }
 
 LogLevel Logger::getLogLevel() {
@@ -112,7 +114,7 @@ void Logger::setLogLogger(bool log_logger) {
 int Logger::fatal(string *prefixes, int prefixes_len, string message, ...) {
     va_list args;
     va_start(args, message);
-    int log_res = log_(true, LogLevelFatal, prefixes, prefixes_len, message, args);
+    int log_res = log_(true, LogLevelFatal, prefixes, prefixes_len, std::move(message), args);
     va_end(args);
     return log_res;
 }
@@ -120,7 +122,7 @@ int Logger::fatal(string *prefixes, int prefixes_len, string message, ...) {
 int Logger::fatal(string message, ...) {
     va_list args;
     va_start(args, message);
-    int log_res = log_(true, LogLevelFatal, NULL, 0, message, args);
+    int log_res = log_(true, LogLevelFatal, nullptr, 0, std::move(message), args);
     va_end(args);
     return log_res;
 }
@@ -128,7 +130,7 @@ int Logger::fatal(string message, ...) {
 int Logger::error(string *prefixes, int prefixes_len, string message, ...) {
     va_list args;
     va_start(args, message);
-    int log_res = log_(true, LogLevelError, prefixes, prefixes_len, message, args);
+    int log_res = log_(true, LogLevelError, prefixes, prefixes_len, std::move(message), args);
     va_end(args);
     return log_res;
 }
@@ -136,7 +138,7 @@ int Logger::error(string *prefixes, int prefixes_len, string message, ...) {
 int Logger::error(string message, ...) {
     va_list args;
     va_start(args, message);
-    int log_res = log_(true, LogLevelError, NULL, 0, message, args);
+    int log_res = log_(true, LogLevelError, nullptr, 0, std::move(message), args);
     va_end(args);
     return log_res;
 }
@@ -144,7 +146,7 @@ int Logger::error(string message, ...) {
 int Logger::warn(string *prefixes, int prefixes_len, string message, ...) {
     va_list args;
     va_start(args, message);
-    int log_res = log_(true, LogLevelWarning, prefixes, prefixes_len, message, args);
+    int log_res = log_(true, LogLevelWarning, prefixes, prefixes_len, std::move(message), args);
     va_end(args);
     return log_res;
 }
@@ -152,7 +154,7 @@ int Logger::warn(string *prefixes, int prefixes_len, string message, ...) {
 int Logger::warn(string message, ...) {
     va_list args;
     va_start(args, message);
-    int log_res = log_(true, LogLevelWarning, NULL, 0, message, args);
+    int log_res = log_(true, LogLevelWarning, nullptr, 0, std::move(message), args);
     va_end(args);
     return log_res;
 }
@@ -160,7 +162,7 @@ int Logger::warn(string message, ...) {
 int Logger::info(string *prefixes, int prefixes_len, string message, ...) {
     va_list args;
     va_start(args, message);
-    int log_res = log_(true, LogLevelInfo, prefixes, prefixes_len, message, args);
+    int log_res = log_(true, LogLevelInfo, prefixes, prefixes_len, std::move(message), args);
     va_end(args);
     return log_res;
 }
@@ -168,7 +170,7 @@ int Logger::info(string *prefixes, int prefixes_len, string message, ...) {
 int Logger::info(string message, ...) {
     va_list args;
     va_start(args, message);
-    int log_res = log_(true, LogLevelInfo, NULL, 0, message, args);
+    int log_res = log_(true, LogLevelInfo, nullptr, 0, std::move(message), args);
     va_end(args);
     return log_res;
 }
@@ -176,7 +178,7 @@ int Logger::info(string message, ...) {
 int Logger::debug(string *prefixes, int prefixes_len, string message, ...) {
     va_list args;
     va_start(args, message);
-    int log_res = log_(true, LogLevelDebug, prefixes, prefixes_len, message, args);
+    int log_res = log_(true, LogLevelDebug, prefixes, prefixes_len, std::move(message), args);
     va_end(args);
     return log_res;
 }
@@ -184,18 +186,18 @@ int Logger::debug(string *prefixes, int prefixes_len, string message, ...) {
 int Logger::debug(string message, ...) {
     va_list args;
     va_start(args, message);
-    int log_res = log_(true, LogLevelDebug, NULL, 0, message, args);
+    int log_res = log_(true, LogLevelDebug, nullptr, 0, std::move(message), args);
     va_end(args);
     return log_res;
 }
 
 const char *Logger::level_msg(LogLevel l) {
     static const char *msgs[5] = {
-            "debug",
-            " info",
-            " warn",
-            "error",
-            "fatal"
+            "\033[38;2;220;100;220mdebug\033[m",
+            " \033[38;2;100;210;210minfo\033[m",
+            " \033[38;2;220;220;100mwarn\033[m",
+            "\033[38;2;255;0;0merror\033[m",
+            "\033[5;38;2;255;0;0m>\033[m\033[1;38;2;255;0;0mfatal\033[0m\033[5;38;2;255;0;0m<\033[m"
     };
 
     if (l < 0 || l > 4) {
@@ -213,7 +215,7 @@ int Logger::log_(bool write_to_log, LogLevel level, string *prefixes, int prefix
     int log_res;
     va_list args;
     va_start(args, message);
-    log_res = log_(write_to_log, level, prefixes, prefixes_len, message, args);
+    log_res = log_(write_to_log, level, prefixes, prefixes_len, std::move(message), args);
     va_end(args);
     return log_res;
 }
@@ -224,8 +226,17 @@ int Logger::log_(bool write_to_log, LogLevel level, string *prefixes, int prefix
     }
 
     int log_res;
-    FILE *logfile;
+    ofstream logFile;
     string full_prefixes;
+
+    logFile.open(log_file_path_, ios::app);
+
+    if (!logFile.is_open()) {
+        cerr << "[ fatal ] [selflog] [ " << item_name_ << " ] Failed to open '" << log_file_path_ << "' (error: " <<
+            strerror(errno) << ")";
+
+    }
+
     full_prefixes.append("[ ").append(level_msg(level)).append(" ] ");
 
     if (print_item_name_) {
@@ -245,7 +256,7 @@ int Logger::log_(bool write_to_log, LogLevel level, string *prefixes, int prefix
         }
     }
 
-    char fmt[4096];
+    char fmt[8192];
 
     if (args) {
         vsprintf(fmt, message.c_str(), args);
@@ -254,21 +265,16 @@ int Logger::log_(bool write_to_log, LogLevel level, string *prefixes, int prefix
     }
 
     ((level == LogLevelError || level == LogLevelFatal) ? cerr : cout) << full_prefixes << fmt << endl;
+    logFile << full_prefixes << fmt << endl;
 
-    //log_res = fprintf(((level == LogLevelError || level == LogLevelFatal) ? stderr : stdout), "%s", msg);
+    if (!logFile.good()) {
+        cerr << "[ error ] [selflog] [ " << ((!item_name_.empty()) ? item_name_ : "-") << " ] Failed to write to log '" <<
+            log_file_path_ << "' (state: " << logFile.rdstate() << ")" << endl;
+    }
 
-//    if (write_to_log) {
-//        if ((logfile = fopen(log_file_path_, "a")) == NULL) {
-//            printf("[ fatal ] [selflog] [ %s ] Failed to open '%s' (error: %s)\n",
-//                    ((item_name_) ? item_name_ : "-"), log_file_path_, strerror(errno));
-//            return -2;
-//        }
-//        if ((log_res = fprintf(logfile, message, args)) < 1) {
-//            printf("[ fatal ] [selflog] [ %s ] Failed to write to '%s' (error: %s)\n",
-//                    ((item_name_) ? item_name_ : "-"), log_file_path_, strerror(errno));
-//        }
-//        fclose(logfile);
-//    }
+    log_res = logFile.rdstate();
+
+    logFile.close();
 
     return log_res;
 }
